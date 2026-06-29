@@ -1,0 +1,81 @@
+services:
+  postgres_user:
+    image: postgres:16-alpine
+    container_name: medbook-postgres-users
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_user_data:/var/lib/postgresql/data
+
+  postgres_appointment:
+    image: postgres:16-alpine
+    container_name: medbook-postgres-appointment
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES1_DB}
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_appointment_data:/var/lib/postgresql/data
+
+  mongo_medicaldoc:
+    image: mongo:7
+    container_name: medbook-mongo-medicaldoc
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_DB}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_medicaldoc_data:/data/db
+
+
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    container_name: medbook-user-service
+    ports:
+      - "8001:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres_user:5432/${POSTGRES_DB}
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      - postgres_user
+
+  appointment-service:
+    build:
+      context: ./appointment-service
+      dockerfile: Dockerfile
+    container_name: medbook-appointment-service
+    ports:
+      - "8002:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres_appointment:5432/${POSTGRES1_DB}
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      - postgres_appointment
+
+  medical-records-service:
+    build:
+      context: ./medical-records-service
+      dockerfile: Dockerfile
+    container_name: medbook-medical-records-service
+    ports:
+      - "8003:8000"
+    environment:
+      DATABASE_URL: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongo_medicaldoc:27017/${MONGO_DB}?authSource=admin
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      - mongo_medicaldoc
+
+volumes:
+  postgres_user_data:
+  postgres_appointment_data:
+  mongo_medicaldoc_data:
