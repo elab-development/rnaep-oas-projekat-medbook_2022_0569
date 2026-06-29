@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+motor
+beanie
+pydantic
+pydantic-settings
+python-jose
+python-multipart
+httpx
