@@ -17,7 +17,13 @@ class DayOfWeek(str, enum.Enum):
     SATURDAY = "Saturday"
     SUNDAY = "Sunday"
 
-
+class Specialization(str, enum.Enum):
+    CARDIOLOGY = "cardiology"
+    DERMATOLOGY = "dermatology"
+    NEUROLOGY = "neurology"
+    PEDIATRICS = "pediatrics"
+    ORTHOPEDICS = "orthopedics"
+    GENERAL = "general"
 
 class User(Base):
     __tablename__="users"
@@ -35,9 +41,9 @@ class Patient(Base):
     __tablename__="patients"
 
     lbo = Column(String, primary_key=True)
-    telephon = Column(Integer, nullable=False)
-    adress = Column(String, nullable=False)
-    dateOfBirth = Column(Date, nullable=False)
+    telephone = Column(String, nullable=False)
+    address = Column(String, nullable=False)
+    date_of_birth = Column(Date, nullable=False)
     users_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), unique=True, nullable=False)
 
 class Admin(Base):
@@ -52,8 +58,8 @@ class Doctor(Base):
 
     licence = Column(String, primary_key=True)
     city = Column(String, nullable=False)
-    specialization = Column(String, nullable=False)
-    hireDate = Column(Date, nullable=False)
+    specialization = Column(Enum(Specialization), nullable=False)
+    hire_date = Column(Date, nullable=False)
     users_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), unique=True, nullable=False)
 
 class Schedule(Base):
