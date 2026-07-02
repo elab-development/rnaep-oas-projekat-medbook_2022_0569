@@ -48,11 +48,31 @@ async def get_doctors_by_specialization(db: AsyncSession, spec: str):
     )
     return result.all()
 
+async def get_all_doctors(db: AsyncSession):
+    result = await db.execute(
+        select(User, Doctor).join(Doctor, User.user_id == Doctor.users_id)
+    )
+    return result.all()
+
 
 async def update_doctor(db: AsyncSession, doctor: Doctor):
     await db.commit()
     await db.refresh(doctor)
     return doctor
+
+
+async def get_users_by_ids(db: AsyncSession, ids: list[int]):
+    result = await db.execute(select(User).where(User.user_id.in_(ids)))
+    return result.scalars().all()
+
+
+async def get_schedule_by_user_id(db: AsyncSession, user_id: int):
+    result = await db.execute(
+        select(Schedule)
+        .join(Doctor, Schedule.doctor_licence == Doctor.licence)
+        .where(Doctor.users_id == user_id)
+    )
+    return result.scalars().all()
 
 
 async def delete_schedule(db: AsyncSession, schedule_id: int, doctor_licence: str):
