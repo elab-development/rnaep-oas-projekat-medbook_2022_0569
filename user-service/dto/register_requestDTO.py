@@ -59,12 +59,35 @@ class UserResponseDTO(BaseModel):
         from_attributes = True
 
 class DoctorResponseDTO(BaseModel):
+    user_id: int
     name: str
     surname: str
     email: str
     specialization: Specialization
     city: str
     hire_date: date
+
+
+class DoctorProfileDTO(BaseModel):
+    user_id: int
+    name: str
+    surname: str
+    email: str
+    specialization: Specialization
+    city: str
+    hire_date: date
+    licence: str
+
+
+class ScheduleResponseDTO(BaseModel):
+    schedule_id: int
+    day: DayOfWeek
+    start_time: time
+    end_time: time
+
+    class Config:
+        from_attributes = True
+
 
 class DoctorUpdateDTO(BaseModel):
     city: str = None
