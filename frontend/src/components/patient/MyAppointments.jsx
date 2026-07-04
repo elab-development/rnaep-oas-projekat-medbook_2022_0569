@@ -92,7 +92,6 @@ export default function MyAppointments() {
             </div>
 
             <div className="appt-datetime">
-              <span className="appt-date-icon">📅</span>
               {formatDate(appt.date)} at {formatTime(appt.date)}
             </div>
 
