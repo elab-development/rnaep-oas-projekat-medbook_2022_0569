@@ -1,17 +1,12 @@
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from sqlalchemy.orm import DeclarativeBase
+from motor.motor_asyncio import AsyncIOMotorClient
+from beanie import init_beanie
+from model.medical_record import MedicalRecord, Examination
 from config import settings
 
 
-engine = create_async_engine(settings.DATABASE_URL, echo=True)
-async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-
-class Base(DeclarativeBase):
-    pass
-
-async def get_db():
-    async with async_session() as session:
-        try:
-            yield session
-        finally:
-            await session.close()
+async def init_db():
+    client = AsyncIOMotorClient(settings.DATABASE_URL)
+    await init_beanie(
+        database=client.get_default_database(),
+        document_models=[MedicalRecord, Examination],
+    )

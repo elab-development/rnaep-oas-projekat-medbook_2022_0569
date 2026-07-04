@@ -1,6 +1,7 @@
 from beanie import Document
 from pydantic import BaseModel
 from datetime import datetime
+from typing import Optional
 import enum
 
 class BloodType(str, enum.Enum):
@@ -12,14 +13,15 @@ class BloodType(str, enum.Enum):
     AB_NEGATIVE = "AB-"
     O_POSITIVE = "O+"
     O_NEGATIVE = "O-"
+    UNKNOWN = "Unknown"
 
 
 class MedicalRecord(Document):
-    patient_id : int
-    blood_type : BloodType
-    allergies : list[str]
-    chronic_diseases: list[str]
-    created_at : datetime
+    patient_id: int
+    blood_type: Optional[BloodType] = BloodType.UNKNOWN
+    allergies: list[str] = []
+    chronic_diseases: list[str] = []
+    created_at: datetime
 
     class Settings:
         name = "medical_records"
