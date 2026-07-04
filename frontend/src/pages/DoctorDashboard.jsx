@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import DoctorProfile from '../components/doctor/DoctorProfile';
 import DoctorSchedule from '../components/doctor/DoctorSchedule';
 import DoctorAppointments from '../components/doctor/DoctorAppointments';
+import WeatherWidget from '../components/WeatherWidget';
 
 const NAV = [
   { key: 'profile',      label: 'My Profile' },
@@ -54,7 +55,7 @@ export default function DoctorDashboard() {
         </header>
 
         <div className="dashboard-content">
-          {active === 'profile'      && <DoctorProfile />}
+          {active === 'profile'      && <><WeatherWidget /><DoctorProfile /></>}
           {active === 'schedule'     && <DoctorSchedule />}
           {active === 'appointments' && <DoctorAppointments />}
         </div>

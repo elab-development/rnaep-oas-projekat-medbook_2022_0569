@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getDoctorAppointments, completeAppointment, cancelAppointment } from '../../api/appointments';
+import ExaminationModal from './ExaminationModal';
+import MedicalRecordModal from './MedicalRecordModal';
 
 const STATUS_BADGE = {
   scheduled: 'badge-orange',
@@ -27,6 +29,8 @@ export default function DoctorAppointments() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [tab, setTab] = useState('upcoming');
+  const [examinationAppt, setExaminationAppt] = useState(null);
+  const [recordAppt, setRecordAppt] = useState(null);
 
   useEffect(() => {
     getDoctorAppointments()
@@ -68,6 +72,23 @@ export default function DoctorAppointments() {
     <div>
       {error && <div className="alert alert-error" style={{ marginBottom: '1rem' }}>{error}</div>}
 
+      {examinationAppt && (
+        <ExaminationModal
+          appointment={examinationAppt}
+          onClose={() => setExaminationAppt(null)}
+          onSaved={() => setExaminationAppt(null)}
+        />
+      )}
+
+      {recordAppt && (
+        <MedicalRecordModal
+          patientId={recordAppt.patient_id}
+          patientName={recordAppt.patient_name || `Patient #${recordAppt.patient_id}`}
+          onClose={() => setRecordAppt(null)}
+          onSaved={() => setRecordAppt(null)}
+        />
+      )}
+
       <div className="section-tabs">
         <button className={`tab-btn${tab === 'upcoming' ? ' active' : ''}`} onClick={() => setTab('upcoming')}>
           Upcoming
@@ -93,34 +114,45 @@ export default function DoctorAppointments() {
                 const name = appt.patient_name || `Patient #${appt.patient_id}`;
                 const initials = name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
                 return (
-                <div key={appt.id} className="appointment-card appt-card-doctor">
-                  <div className="appt-top">
-                    <div className="appt-info">
-                      <div className="patient-avatar-sm">{initials}</div>
-                      <div>
-                        <h4 className="appt-doctor">{name}</h4>
-                        <span className="appt-spec">{appt.description || 'No description'}</span>
+                  <div key={appt.id} className="appointment-card appt-card-doctor">
+                    <div className="appt-top">
+                      <div className="appt-info">
+                        <div className="patient-avatar-sm">{initials}</div>
+                        <div>
+                          <h4 className="appt-doctor">{name}</h4>
+                          <span className="appt-spec">{appt.description || 'No description'}</span>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <span className="appt-time-badge">{fmtTime(appt.date)}</span>
+                        <span className={`badge ${STATUS_BADGE[appt.status]}`}>
+                          {appt.status.charAt(0).toUpperCase() + appt.status.slice(1)}
+                        </span>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <span className="appt-time-badge">{fmtTime(appt.date)}</span>
-                      <span className={`badge ${STATUS_BADGE[appt.status]}`}>
-                        {appt.status.charAt(0).toUpperCase() + appt.status.slice(1)}
-                      </span>
-                    </div>
-                  </div>
 
-                  {appt.status === 'scheduled' && (
-                    <div className="appt-actions">
-                      <button className="btn-complete" onClick={() => markCompleted(appt.id)}>
-                        Mark as Completed
-                      </button>
-                      <button className="btn-danger-outline" onClick={() => handleCancel(appt.id)}>
-                        Cancel
-                      </button>
-                    </div>
-                  )}
-                </div>
+                    {appt.status === 'scheduled' && (
+                      <div className="appt-actions">
+                        <button className="btn-complete" onClick={() => markCompleted(appt.id)}>
+                          Mark as Completed
+                        </button>
+                        <button className="btn-danger-outline" onClick={() => handleCancel(appt.id)}>
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+
+                    {appt.status === 'completed' && (
+                      <div className="appt-actions">
+                        <button className="btn-complete" onClick={() => setExaminationAppt(appt)}>
+                          Add Examination
+                        </button>
+                        <button className="btn-outline" onClick={() => setRecordAppt(appt)}>
+                          Update Medical Record
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>

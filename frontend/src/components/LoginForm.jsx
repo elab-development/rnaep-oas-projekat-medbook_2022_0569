@@ -24,7 +24,8 @@ export default function LoginForm() {
       const padded = base64.padEnd(base64.length + (4 - (base64.length % 4)) % 4, '=');
       const payload = JSON.parse(atob(padded));
       const role = payload?.role;
-      login(token, { email: form.email, role });
+      const id = payload?.sub ? parseInt(payload.sub) : null;
+      login(token, { email: form.email, role, id });
       if (role === 'patient') navigate('/patient');
       else if (role === 'doctor') navigate('/doctor');
       else if (role === 'admin') navigate('/admin');

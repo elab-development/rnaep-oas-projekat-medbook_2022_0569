@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from database import get_db
+import httpx
 from dto.register_requestDTO import PatientRegisterDTO, DoctorRegisterDTO, AdminRegisterDTO, LoginDTO, ScheduleDTO
 from service.user_service import (
     register_patient, register_doctor, register_admin, login,
@@ -132,6 +133,23 @@ async def delete_schedule_endpoint(schedule_id: int, current_user: dict = Depend
 @router.get("/doctors/{doctor_id}/schedule")
 async def get_doctor_schedule_endpoint(doctor_id: int, db: AsyncSession = Depends(get_db)):
     return await get_doctor_schedule_by_id(db, doctor_id)
+
+
+@router.get("/weather")
+async def get_weather(lat: float, lon: float, current_user: dict = Depends(get_current_user)):
+    url = (
+        f"https://api.open-meteo.com/v1/forecast"
+        f"?latitude={lat}&longitude={lon}&current=temperature_2m,weathercode"
+    )
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(url, timeout=10)
+    if resp.status_code != 200:
+        raise HTTPException(status_code=502, detail="Weather service unavailable")
+    data = resp.json()
+    return {
+        "temperature": data["current"]["temperature_2m"],
+        "weathercode": data["current"]["weathercode"],
+    }
 
 
 @router.get("/users/batch")
