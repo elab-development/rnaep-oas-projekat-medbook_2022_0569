@@ -3,6 +3,7 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
 from database import init_db
 from controller.medical_record_controller import router
+from controller.examination_controller import router as examination_router
 import traceback
 
 
@@ -23,6 +24,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 
 app.include_router(router)
+app.include_router(examination_router)
 
 
 @app.get("/health")

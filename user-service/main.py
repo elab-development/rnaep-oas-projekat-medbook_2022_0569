@@ -3,6 +3,7 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
 from database import engine, Base
 from controller.user_controller import router
+from controller.auth_controller import router as auth_router
 import traceback
 
 @asynccontextmanager
@@ -20,6 +21,7 @@ async def global_exception_handler(request: Request, exc: Exception):
         raise exc
     return JSONResponse(status_code=500, content={"error": traceback.format_exc()})
 
+app.include_router(auth_router)
 app.include_router(router)
 
 @app.get("/health")

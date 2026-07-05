@@ -1,11 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.exc import IntegrityError
 from database import get_db
-import httpx
-from dto.register_requestDTO import PatientRegisterDTO, DoctorRegisterDTO, AdminRegisterDTO, LoginDTO, ScheduleDTO
 from service.user_service import (
-    register_patient, register_doctor, register_admin, login,
     get_all_users, toggle_user_active, create_schedule,
     search_doctors, get_all_doctors,
     update_doctor_profile, remove_schedule,
@@ -13,58 +9,17 @@ from service.user_service import (
 )
 from repository.user_repository import get_users_by_ids
 from security.jwt_security import get_current_user
-from dto.register_requestDTO import DoctorUpdateDTO
+from dto.register_requestDTO import DoctorUpdateDTO, ScheduleDTO
+import httpx
 
 router = APIRouter()
-
-
-@router.post("/register/patient")
-async def register_patient_endpoint(dto: PatientRegisterDTO, db: AsyncSession = Depends(get_db)):
-    try:
-        await register_patient(db, dto)
-    except IntegrityError:
-        raise HTTPException(status_code=409, detail="Email already exists")
-    return {"message": "Patient registered successfully"}
-
-
-@router.post("/register/doctor")
-async def register_doctor_endpoint(dto: DoctorRegisterDTO, db: AsyncSession = Depends(get_db)):
-    try:
-        await register_doctor(db, dto)
-    except IntegrityError:
-        raise HTTPException(status_code=409, detail="Email already exists")
-    return {"message": "Doctor registered successfully"}
-
-
-@router.post("/register/admin")
-async def register_admin_endpoint(
-    dto: AdminRegisterDTO,
-    current_user: dict = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    if current_user["role"] != "admin":
-        raise HTTPException(status_code=403, detail="Only admins can register new admins")
-    try:
-        await register_admin(db, dto)
-    except IntegrityError:
-        raise HTTPException(status_code=409, detail="Email already exists")
-    return {"message": "Admin registered successfully"}
-
-
-@router.post("/login")
-async def login_endpoint(dto: LoginDTO, db: AsyncSession = Depends(get_db)):
-    token = await login(db, dto)
-    if token is None:
-        raise HTTPException(status_code=401, detail="Wrong email or password")
-    return {"access_token": token}
 
 
 @router.get("/users")
 async def get_all_users_endpoint(current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     if current_user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Only admin can access this")
-    users = await get_all_users(db)
-    return users
+    return await get_all_users(db)
 
 
 @router.patch("/users/{id}/toggle-active")
@@ -73,6 +28,30 @@ async def toggle_user_active_endpoint(id: int, current_user: dict = Depends(get_
         raise HTTPException(status_code=403, detail="Only admin can access this")
     await toggle_user_active(db, id)
     return {"message": "User deactivated/activated"}
+
+
+@router.get("/users/batch")
+async def get_users_batch_endpoint(ids: str, db: AsyncSession = Depends(get_db)):
+    id_list = [int(i) for i in ids.split(',') if i.strip().isdigit()]
+    users = await get_users_by_ids(db, id_list)
+    return [{"user_id": u.user_id, "name": u.name, "surname": u.surname} for u in users]
+
+
+@router.get("/weather")
+async def get_weather(lat: float, lon: float, current_user: dict = Depends(get_current_user)):
+    url = (
+        f"https://api.open-meteo.com/v1/forecast"
+        f"?latitude={lat}&longitude={lon}&current=temperature_2m,weathercode"
+    )
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(url, timeout=10)
+    if resp.status_code != 200:
+        raise HTTPException(status_code=502, detail="Weather service unavailable")
+    data = resp.json()
+    return {
+        "temperature": data["current"]["temperature_2m"],
+        "weathercode": data["current"]["weathercode"],
+    }
 
 
 @router.get("/doctors/profile")
@@ -98,19 +77,12 @@ async def create_schedule_endpoint(dto: ScheduleDTO, current_user: dict = Depend
 
 
 @router.get("/doctors/all")
-async def get_all_doctors_endpoint(
-    current_user: dict = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
+async def get_all_doctors_endpoint(current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     return await get_all_doctors(db)
 
 
 @router.get("/doctors")
-async def search_doctors_endpoint(
-    specialization: str,
-    current_user: dict = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
+async def search_doctors_endpoint(specialization: str, current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     return await search_doctors(db, specialization)
 
 
@@ -133,27 +105,3 @@ async def delete_schedule_endpoint(schedule_id: int, current_user: dict = Depend
 @router.get("/doctors/{doctor_id}/schedule")
 async def get_doctor_schedule_endpoint(doctor_id: int, db: AsyncSession = Depends(get_db)):
     return await get_doctor_schedule_by_id(db, doctor_id)
-
-
-@router.get("/weather")
-async def get_weather(lat: float, lon: float, current_user: dict = Depends(get_current_user)):
-    url = (
-        f"https://api.open-meteo.com/v1/forecast"
-        f"?latitude={lat}&longitude={lon}&current=temperature_2m,weathercode"
-    )
-    async with httpx.AsyncClient() as client:
-        resp = await client.get(url, timeout=10)
-    if resp.status_code != 200:
-        raise HTTPException(status_code=502, detail="Weather service unavailable")
-    data = resp.json()
-    return {
-        "temperature": data["current"]["temperature_2m"],
-        "weathercode": data["current"]["weathercode"],
-    }
-
-
-@router.get("/users/batch")
-async def get_users_batch_endpoint(ids: str, db: AsyncSession = Depends(get_db)):
-    id_list = [int(i) for i in ids.split(',') if i.strip().isdigit()]
-    users = await get_users_by_ids(db, id_list)
-    return [{"user_id": u.user_id, "name": u.name, "surname": u.surname} for u in users]
