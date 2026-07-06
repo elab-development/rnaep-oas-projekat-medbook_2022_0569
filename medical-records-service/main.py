@@ -1,10 +1,12 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
+from prometheus_fastapi_instrumentator import Instrumentator
 from database import init_db
 from controller.medical_record_controller import router
 from controller.examination_controller import router as examination_router
 import traceback
+
 
 
 @asynccontextmanager
@@ -30,3 +32,5 @@ app.include_router(examination_router)
 @app.get("/health")
 async def health():
     return {"status": "ok", "service": "medical-records-service"}
+
+Instrumentator().instrument(app).expose(app)
