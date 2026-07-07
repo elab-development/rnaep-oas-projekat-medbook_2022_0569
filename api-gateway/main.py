@@ -4,15 +4,15 @@ from prometheus_fastapi_instrumentator import Instrumentator
 import httpx
 
 app = FastAPI(title="MedBook - API Gateway")
-Instrumentator().instrument(app).expose(app)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:80", "http://localhost"],
+    allow_origins=["http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
 )
+
 
 SERVICES = {
     "users": "http://user-service:8000",
@@ -45,3 +45,5 @@ async def proxy(service: str, path: str, request: Request):
         status_code=response.status_code,
         headers=dict(response.headers),
     )
+
+Instrumentator().instrument(app).expose(app)
