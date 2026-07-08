@@ -110,6 +110,55 @@ docker compose down -v
 
 ---
 
+## Distribuirani mikroservisni patern: Circuit Breaker
+
+### Opis paterna
+
+Circuit Breaker je mehanizam zaštite sistema od kaskadnih otkazivanja. Kada jedan mikroservis postane nedostupan ili previše spor, circuit breaker se "otvara" i odmah odbija zahtjeve prema tom servisu — bez čekanja na timeout — dok servisu daje vremena da se oporavi. Klijentu se vraća podrazumijevani (fallback) odgovor umjesto beskonačnog čekanja.
+
+### Implementacija
+
+Circuit breaker je implementiran u **API Gateway** (`api-gateway/main.py`) kao vlastita klasa `CircuitBreaker` koja prati stanje svakog mikroservisa nezavisno.
+
+#### Stanja circuit breakera
+
+| Stanje | Opis |
+|--------|------|
+| **CLOSED** | Normalan rad — zahtjevi prolaze do mikroservisa |
+| **OPEN** | Servis je nedostupan — zahtjevi se odmah odbijaju s fallback odgovorom |
+| **HALF-OPEN** | Nakon 30s recovery perioda — pušta jedan probni zahtjev da provjeri dostupnost |
+
+#### Konfiguracija
+
+```python
+CircuitBreaker(fail_max=3, reset_timeout=30)
+```
+
+- `fail_max=3` — otvara se nakon 3 uzastopna neuspjeha
+- `reset_timeout=30` — ostaje otvoren 30 sekundi, zatim prelazi u HALF-OPEN
+
+#### Primjer fallback odgovora (HTTP 503)
+
+Kada je circuit otvoren, gateway vraća:
+
+```json
+{
+  "error": "Service temporarily unavailable",
+  "service": "users",
+  "message": "Circuit breaker is open for 'users'. Try again later."
+}
+```
+
+### Zašto Circuit Breaker
+
+U distribuiranim sistemima, otkazivanje jednog mikroservisa može uzrokovati kaskadne greške — zahtjevi se gomilaju, threadovi se blokiraju, sistem se ruši u cjelini. Circuit Breaker sprječava ovaj scenarij tako što:
+
+- **Štiti klijenta** od dugih čekanja na timeout (10s → 0ms kad je breaker otvoren)
+- **Daje servisu prostor** za oporavak bez stalnog opterećenja novim zahtjevima
+- **Izoluje kvar** — otkazivanje `user-service` ne utiče na `appointment-service` ni `medical-records-service`
+
+---
+
 ## Eksterni API servisi
 
 Aplikacija koristi dva besplatna eksterna API servisa bez potrebe za API ključem:

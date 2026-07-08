@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { login as loginUser } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
+import { sanitizeObject } from '../utils/sanitize';
 
 export default function LoginForm() {
   const [form, setForm] = useState({ email: '', password: '' });
@@ -18,7 +19,7 @@ export default function LoginForm() {
     setError('');
     setLoading(true);
     try {
-      const res = await loginUser(form);
+      const res = await loginUser(sanitizeObject(form));
       const token = res.data.access_token;
       const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
       const padded = base64.padEnd(base64.length + (4 - (base64.length % 4)) % 4, '=');

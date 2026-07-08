@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { registerPatient, registerDoctor, registerAdmin } from '../api/auth';
+import { sanitizeObject } from '../utils/sanitize';
 
 const SPECIALIZATIONS = [
   'cardiology',
@@ -44,7 +45,7 @@ export default function RegisterForm() {
     setError('');
     setLoading(true);
     try {
-      await REGISTER_FN[role](form);
+      await REGISTER_FN[role](sanitizeObject(form));
       setSuccess('Account created! Redirecting to sign in…');
       setTimeout(() => navigate('/login'), 2000);
     } catch (err) {
