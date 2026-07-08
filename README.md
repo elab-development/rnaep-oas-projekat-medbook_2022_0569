@@ -214,3 +214,45 @@ U distribuiranim sistemima, otkazivanje jednog mikroservisa može uzrokovati kas
 - *Štiti klijenta* od dugih čekanja na timeout (10s → 0ms kad je breaker otvoren)
 - *Daje servisu prostor* za oporavak bez stalnog opterećenja novim zahtjevima
 - *Izoluje kvar* — otkazivanje user-service ne utiče na appointment-service ni medical-records-service
+
+---
+
+## Arhitektura vođena događajima (Event-Driven Architecture)
+
+Komunikacija između mikroservisa je transformisana iz sinhrone (HTTP/REST) u asinhronu korišćenjem **Apache Kafka** platforme kao Message Broker-a (servis `kafka` u docker-compose, KRaft mod — bez ZooKeeper-a).
+
+### Kafka topics (5)
+
+| Topic | Producer | Consumer | Opis |
+|-------|----------|----------|------|
+| `user-registered` | user-service | medical-records-service | Novi pacijent/doktor registrovan |
+| `appointment-created` | appointment-service | notification-service | Termin zakazan |
+| `appointment-cancelled` | appointment-service | notification-service | Termin otkazan |
+| `appointment-completed` | appointment-service | notification-service | Termin završen |
+| `medical-record-created` | medical-records-service | notification-service | Karton automatski kreiran |
+
+### Producer-i i Consumer-i
+
+- **user-service** — *Producer*: publikuje `user-registered` nakon uspješne registracije (`events/kafka_producer.py`, poziv u `service/auth_service.py`)
+- **appointment-service** — *Producer*: publikuje `appointment-created` / `appointment-cancelled` / `appointment-completed` (`service/appointment_service.py`)
+- **notification-service** (port 8004) — *Consumer*: sluša 4 topic-a i pretvara događaje u notifikacije, dostupne na `GET http://localhost:8004/notifications`
+
+### Hibridni modul (Processor): medical-records-service
+
+`medical-records-service` funkcioniše **i kao Consumer i kao Producer** (`events/kafka_consumer.py`):
+
+1. **Konzumira** događaj `user-registered` sa Kafka topic-a
+2. **Izvršava poslovnu logiku** — ako je registrovan pacijent, automatski kreira prazan zdravstveni karton u MongoDB (ranije se karton kreirao sinhronim HTTP pozivom)
+3. **Publikuje** novi događaj `medical-record-created` na drugi topic
+
+```
+user-service ──(user-registered)──▶ medical-records-service ──(medical-record-created)──▶ notification-service
+                                       [Processor: kreira karton]
+appointment-service ──(appointment-created/cancelled/completed)──────────────────────────▶ notification-service
+```
+
+### Zašto asinhrona komunikacija
+
+- **Otpornost** — registracija pacijenta uspijeva i kad je medical-records-service trenutno nedostupan; događaj čeka u Kafka logu i biće obrađen kad se servis oporavi
+- **Labava spregnutost** — user-service ne zna ko konzumira njegove događaje; novi consumer se dodaje bez izmjene producer-a
+- **Skalabilnost** — consumer grupe omogućavaju paralelnu obradu događaja

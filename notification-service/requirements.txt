@@ -1,0 +1,5 @@
+fastapi
+uvicorn
+pydantic-settings
+aiokafka
+prometheus-fastapi-instrumentator

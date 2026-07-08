@@ -5,6 +5,8 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from database import init_db
 from controller.medical_record_controller import router
 from controller.examination_controller import router as examination_router
+from events.kafka_producer import start_producer, stop_producer
+from events.kafka_consumer import start_consumer, stop_consumer
 import traceback
 
 
@@ -12,7 +14,11 @@ import traceback
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
+    await start_producer()
+    start_consumer()
     yield
+    await stop_consumer()
+    await stop_producer()
 
 
 app = FastAPI(title="MedBook - Medical Records Service", lifespan=lifespan)
