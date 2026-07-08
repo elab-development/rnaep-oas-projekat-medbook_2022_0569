@@ -5,5 +5,6 @@ class Settings(BaseSettings):
     JWT_SECRET: str = "supersecretkey123medbook"
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRATION_MINUTES: int = 60
+    KAFKA_BOOTSTRAP_SERVERS: str = "kafka:9092"
 
 settings = Settings()

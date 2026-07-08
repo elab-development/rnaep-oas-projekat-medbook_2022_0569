@@ -11,6 +11,7 @@ from repository.appointment_repository import (
     delete_appointment,
 )
 from model.appointment import Appointment, AppointmentStatus
+from events.kafka_producer import publish
 from fastapi import HTTPException
 
 SLOT_DURATION_MINUTES = 30
@@ -64,7 +65,15 @@ async def book_appointment(db, doctor_id: int, patient_id: int, appointment_date
         description=description,
         date=appointment_date,
     )
-    return await create_appointment(db, appointment)
+    appointment = await create_appointment(db, appointment)
+    await publish("appointment-created", {
+        "appointment_id": appointment.id,
+        "doctor_id": appointment.doctor_id,
+        "patient_id": appointment.patient_id,
+        "date": appointment.date,
+        "description": appointment.description,
+    })
+    return appointment
 
 
 async def cancel_appointment(db, appointment_id: int, user_id: int):
@@ -73,7 +82,15 @@ async def cancel_appointment(db, appointment_id: int, user_id: int):
         raise HTTPException(status_code=404, detail="Appointment not found")
     if appointment.patient_id != user_id and appointment.doctor_id != user_id:
         raise HTTPException(status_code=403, detail="Not your appointment")
+    event = {
+        "appointment_id": appointment.id,
+        "doctor_id": appointment.doctor_id,
+        "patient_id": appointment.patient_id,
+        "date": appointment.date,
+        "cancelled_by": user_id,
+    }
     await delete_appointment(db, appointment)
+    await publish("appointment-cancelled", event)
 
 
 async def complete_appointment(db, appointment_id: int, doctor_id: int):
@@ -82,7 +99,14 @@ async def complete_appointment(db, appointment_id: int, doctor_id: int):
         raise HTTPException(status_code=404, detail="Appointment not found")
     if appointment.doctor_id != doctor_id:
         raise HTTPException(status_code=403, detail="Not your appointment")
-    return await update_appointment_status(db, appointment, AppointmentStatus.COMPLETED)
+    appointment = await update_appointment_status(db, appointment, AppointmentStatus.COMPLETED)
+    await publish("appointment-completed", {
+        "appointment_id": appointment.id,
+        "doctor_id": appointment.doctor_id,
+        "patient_id": appointment.patient_id,
+        "date": appointment.date,
+    })
+    return appointment
 
 
 async def _fetch_names(user_ids: list[int]) -> dict[int, str]:

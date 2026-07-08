@@ -9,3 +9,4 @@ python-jose
 python-multipart
 httpx
 prometheus-fastapi-instrumentator
+aiokafka

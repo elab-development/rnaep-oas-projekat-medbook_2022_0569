@@ -5,5 +5,6 @@ class Settings(BaseSettings):
     JWT_SECRET: str = "supersecretkey123medbook"
     JWT_ALGORITHM: str = "HS256"
     USER_SERVICE_URL: str = "http://user-service:8000"
+    KAFKA_BOOTSTRAP_SERVERS: str = "kafka:9092"
 
 settings = Settings()
