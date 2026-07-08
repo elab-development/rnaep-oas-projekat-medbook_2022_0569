@@ -106,7 +106,7 @@ export default function MedicalHistory() {
   if (loading) return <p className="empty-state">Loading medical history…</p>;
 
   return (
-    <div style={{ maxWidth: 720 }}>
+    <div style={{ maxWidth: 720, margin: '0 auto' }}>
       {error && <div className="alert alert-error" style={{ marginBottom: '1rem' }}>{error}</div>}
 
       {wikiDiagnosis && (
@@ -183,6 +183,19 @@ export default function MedicalHistory() {
                     <div style={{ marginTop: '0.75rem' }}>
                       <p style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Recommendations</p>
                       <p style={{ fontSize: '0.9rem', color: '#374151' }}>{exam.recommendations}</p>
+                    </div>
+                  )}
+
+                  {exam.therapy && exam.therapy.length > 0 && (
+                    <div style={{ marginTop: '0.75rem' }}>
+                      <p style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Therapy</p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                        {exam.therapy.map((t, i) => (
+                          <div key={i} style={{ fontSize: '0.875rem', color: '#374151', background: '#f8fafc', borderRadius: 8, padding: '0.375rem 0.75rem' }}>
+                            <strong>{t.medicine}</strong> — {t.dose}, {t.frequency}, {t.duration} days
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
 

@@ -105,7 +105,7 @@ export default function DoctorAppointments() {
         </p>
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: 680 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: 680, margin: '0 auto' }}>
         {sortedDates.map((date) => (
           <div key={date}>
             <p className="appt-date-header">{fmtDate(date)}</p>

@@ -75,4 +75,6 @@ async def login(db: AsyncSession, dto) -> str | None:
         return None
     if not verify_password(dto.password, user.password_hash):
         return None
+    if not user.active:
+        return None
     return create_access_token({"sub": str(user.user_id), "role": user.role.value})
