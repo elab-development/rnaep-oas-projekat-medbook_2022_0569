@@ -69,7 +69,7 @@ export default function DoctorSchedule() {
   if (loading) return <p className="empty-state">Loading schedule…</p>;
 
   return (
-    <div style={{ maxWidth: 640 }}>
+    <div style={{ maxWidth: 640, margin: '0 auto' }}>
       <div className="schedule-card">
         <h3 className="schedule-card-title">Current Schedule</h3>
 

@@ -84,8 +84,8 @@ const styles = {
     border: '1px solid #bae6fd',
     borderRadius: 14,
     padding: '0.75rem 1.25rem',
-    marginBottom: '1.5rem',
-    maxWidth: 560,
+    margin: '0 auto 1.5rem',
+    maxWidth: 680,
   },
   left: {
     display: 'flex',

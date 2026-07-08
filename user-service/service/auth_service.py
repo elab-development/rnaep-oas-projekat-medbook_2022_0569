@@ -10,6 +10,7 @@ from repository.user_repository import (
     create_doctor,
     create_admin,
 )
+from events.kafka_producer import publish
 
 
 async def register_patient(db: AsyncSession, dto):
@@ -30,6 +31,13 @@ async def register_patient(db: AsyncSession, dto):
     )
     await create_patient(db, patient)
     await db.commit()
+    await publish("user-registered", {
+        "user_id": user.user_id,
+        "role": "patient",
+        "name": user.name,
+        "surname": user.surname,
+        "email": user.email,
+    })
 
 
 async def register_doctor(db: AsyncSession, dto):
@@ -50,6 +58,13 @@ async def register_doctor(db: AsyncSession, dto):
     )
     await create_doctor(db, doctor)
     await db.commit()
+    await publish("user-registered", {
+        "user_id": user.user_id,
+        "role": "doctor",
+        "name": user.name,
+        "surname": user.surname,
+        "email": user.email,
+    })
 
 
 async def register_admin(db: AsyncSession, dto):
@@ -74,5 +89,7 @@ async def login(db: AsyncSession, dto) -> str | None:
     if user is None:
         return None
     if not verify_password(dto.password, user.password_hash):
+        return None
+    if not user.active:
         return None
     return create_access_token({"sub": str(user.user_id), "role": user.role.value})
